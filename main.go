@@ -1,0 +1,218 @@
+package main
+
+import (
+	"bufio"
+	"bytes"
+	"crypto/tls"
+	"flag"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/missdeer/golib/fsutil"
+)
+
+var (
+	remoteService   = false
+	javaPath        string
+	jarPath         string
+	dotPath         string
+	outputFormat    string
+	outputPath      string
+	outputDirectory string
+	inputType       string
+	sourceFile      string
+	serviceURL      string
+)
+
+func main() {
+	flag.StringVar(&javaPath, "java", "", "set java path")
+	flag.StringVar(&jarPath, "jar", "", "set local plantuml.jar path")
+	flag.StringVar(&dotPath, "dot", "", "set local dot.exe path")
+	flag.StringVar(&outputFormat, "format", "svg", "set output format, png or svg")
+	flag.StringVar(&outputPath, "path", "", "save output file to local path, will ignore dir option, if it's not set, will generate a uuid as the file name")
+	flag.StringVar(&outputDirectory, "dir", ".", "save output file to local directory")
+	flag.StringVar(&sourceFile, "src", "", "input source file path, if it's empty, then read source from stdin")
+	flag.StringVar(&inputType, "type", "uml", "set input type, uml/ditto/mindmap/math/latex/dot/gantt")
+	flag.BoolVar(&remoteService, "remote", false, "use remote PlantUML service")
+	flag.StringVar(&serviceURL, "service", "https://www.plantuml.com/plantuml", "set remote PlantUML service url")
+	flag.Parse()
+
+	input := []string{}
+	var fh *os.File
+	if b, err := fsutil.FileExists(sourceFile); err == nil && b == true {
+		file, err := os.Open(sourceFile)
+		if err != nil {
+			log.Println(err)
+		} else {
+			fh = file
+			defer file.Close()
+		}
+	}
+
+	var scanner *bufio.Scanner
+	if fh != nil {
+		scanner = bufio.NewScanner(fh)
+	} else {
+		scanner = bufio.NewScanner(os.Stdin)
+	}
+	for scanner.Scan() {
+		input = append(input, scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	content := strings.Join(input, "\n")
+	output, err := plantuml(content, outputFormat)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if outputPath != "" {
+		d := filepath.Dir(outputPath)
+		if b, err := fsutil.FileExists(d); b == false || err != nil {
+			os.MkdirAll(d, 0644)
+		}
+		f, err := os.Create(outputPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+		f.Write(output)
+		return
+	}
+	if outputDirectory != "" {
+		if b, err := fsutil.FileExists(outputDirectory); b == false || err != nil {
+			os.MkdirAll(outputDirectory, 0644)
+		}
+		id, err := uuid.NewUUID()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fn := filepath.Join(outputDirectory, id.String()+"."+outputFormat)
+		f, err := os.Create(fn)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+		f.Write(output)
+		return
+	}
+}
+
+// GetBytes returns content as []byte
+func getBytes(u string, headers http.Header, timeout time.Duration, retryCount int) (c []byte, err error) {
+	client := &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+	retry := 0
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		log.Println("Could not parse novel page request:", err)
+		return
+	}
+
+	req.Header = headers
+doRequest:
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println("Could not send request:", err)
+		retry++
+		if retry < retryCount {
+			time.Sleep(3 * time.Second)
+			goto doRequest
+		}
+		return
+	}
+
+	if resp.StatusCode != 200 {
+		resp.Body.Close()
+		log.Println("response not 200:", resp.StatusCode, resp.Status)
+		retry++
+		if retry < retryCount {
+			time.Sleep(3 * time.Second)
+			goto doRequest
+		}
+		return
+	}
+
+	c, err = ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		log.Println("reading content failed")
+		retry++
+		if retry < retryCount {
+			time.Sleep(3 * time.Second)
+			goto doRequest
+		}
+		return
+	}
+	return
+}
+
+func plantumlRemote(content, format string) (b []byte, e error) {
+	u := fmt.Sprintf("%s/%s/%s", serviceURL, format, Encode(content))
+
+	b, e = getBytes(u,
+		http.Header{
+			"User-Agent": []string{"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:62.0) Gecko/20100101 Firefox/62.0"},
+			"Accept":     []string{"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
+		},
+		30*time.Second, 3)
+	return
+}
+
+func plantumlLocal(content, format string) (b []byte, e error) {
+	cmd := exec.Command(javaPath, "-jar", jarPath, "-t"+format, "-charset", "UTF-8", "-graphvizdot", dotPath, "-pipe")
+	stdin, e := cmd.StdinPipe()
+	if e != nil {
+		log.Println("can't get stdin pipe", e)
+		return
+	}
+	go func() {
+		io.WriteString(stdin, content)
+		stdin.Close()
+	}()
+
+	b, e = cmd.Output()
+	if e != nil {
+		log.Println("cmd output error:", e)
+		return
+	}
+
+	return b, nil
+}
+
+func plantuml(content, format string) (b []byte, e error) {
+	if remoteService != false {
+		b, e = plantumlLocal(content, format)
+	} else {
+		b, e = plantumlRemote(content, format)
+	}
+
+	if format == "svg" {
+		beginPos := bytes.Index(b, []byte("style=\"width:"))
+		if beginPos > 0 {
+			t := b[beginPos+1:]
+			endPos := bytes.Index(t, []byte(";\""))
+			if endPos > 0 {
+				b = append(b[:beginPos-1], t[endPos+2:]...)
+			}
+		}
+	}
+	return
+}
