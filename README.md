@@ -16,5 +16,5 @@ cat test.puml | ./plantuml-cmd
 or
 
 ```
-./plantuml-cmd -src test.puml
+./plantuml-cmd -i test.puml
 ```

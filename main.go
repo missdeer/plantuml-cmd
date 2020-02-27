@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/tls"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,8 +12,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
+
+	flag "github.com/spf13/pflag"
 
 	"github.com/google/uuid"
 	"github.com/missdeer/golib/fsutil"
@@ -34,16 +36,62 @@ var (
 )
 
 func main() {
-	flag.StringVar(&javaPath, "java", "", "set java path")
-	flag.StringVar(&jarPath, "jar", "", "set local plantuml.jar path")
-	flag.StringVar(&dotPath, "dot", "", "set local dot.exe path")
-	flag.StringVar(&outputFormat, "format", "svg", "set output format, png or svg")
-	flag.StringVar(&outputPath, "path", "", "save output file to local path, will ignore dir option, if it's not set, will generate a uuid as the file name")
-	flag.StringVar(&outputDirectory, "dir", ".", "save output file to local directory")
-	flag.StringVar(&sourceFile, "src", "", "input source file path, if it's empty, then read source from stdin")
-	flag.StringVar(&inputType, "type", "uml", "set input type, uml/ditto/mindmap/math/latex/dot/gantt")
-	flag.BoolVar(&remoteService, "remote", false, "use remote PlantUML service")
-	flag.StringVar(&serviceURL, "service", "https://www.plantuml.com/plantuml", "set remote PlantUML service url")
+	jarPath = os.Getenv(`PLANTUML_PATH`)
+	if b, err := fsutil.FileExists(jarPath); err != nil || !b {
+		jarPath, _ = exec.LookPath("plantuml.jar")
+	}
+
+	dotPath = os.Getenv(`GRAPHVIZ_DOT`)
+	if b, err := fsutil.FileExists(dotPath); err != nil || !b {
+		if runtime.GOOS == "windows" {
+			dotPath, _ = exec.LookPath(`dot.exe`)
+		} else {
+			dotPath, _ = exec.LookPath(`dot`)
+		}
+	}
+
+	javaPath = os.Getenv(`JAVA_PATH`)
+	if b, err := fsutil.FileExists(javaPath); err != nil || !b {
+		if runtime.GOOS == "windows" {
+			javaPath, _ = exec.LookPath(`java.exe`)
+		} else {
+			javaPath, _ = exec.LookPath(`java`)
+		}
+	}
+	if b, err := fsutil.FileExists(javaPath); err != nil || !b {
+		javaHome := os.Getenv(`JAVA_HOME`)
+		if b, err := fsutil.FileExists(javaHome); err == nil && b {
+			if runtime.GOOS == "windows" {
+				javaPath = filepath.Join(javaHome, "bin", "java.exe")
+			} else {
+				javaPath = filepath.Join(javaHome, "bin", "java")
+			}
+		}
+	}
+	if b, err := fsutil.FileExists(javaPath); err != nil || !b {
+		jreHome := os.Getenv(`JRE_HOME`)
+		if b, err := fsutil.FileExists(jreHome); err == nil && b {
+			if runtime.GOOS == "windows" {
+				javaPath = filepath.Join(jreHome, "bin", "java.exe")
+			} else {
+				javaPath = filepath.Join(jreHome, "bin", "java")
+			}
+		}
+	}
+	if b, err := fsutil.FileExists(javaPath); err != nil || !b {
+		javaPath = ""
+	}
+
+	flag.StringVarP(&javaPath, "java", "j", javaPath, "set local java.exe path")
+	flag.StringVarP(&jarPath, "jar", "a", jarPath, "set local plantuml.jar path")
+	flag.StringVarP(&dotPath, "dot", "d", dotPath, "set local dot.exe path")
+	flag.StringVarP(&outputFormat, "format", "f", "svg", "set output format, png or svg")
+	flag.StringVarP(&outputPath, "output", "o", "", "save output file to local path, will ignore path option, if it's not set, will generate a uuid as the file name")
+	flag.StringVarP(&outputDirectory, "path", "p", ".", "save output file to local directory path")
+	flag.StringVarP(&sourceFile, "input", "i", "", "input source file path, if it's empty, then read source from stdin")
+	flag.StringVarP(&inputType, "type", "t", "uml", "set input type, uml/ditto/mindmap/math/latex/dot/gantt")
+	flag.BoolVarP(&remoteService, "remote", "r", false, "use remote PlantUML service")
+	flag.StringVarP(&serviceURL, "service", "s", "https://www.plantuml.com/plantuml", "set remote PlantUML service url")
 	flag.Parse()
 
 	input := []string{}
@@ -73,6 +121,16 @@ func main() {
 	}
 
 	content := strings.Join(input, "\n")
+
+	if !strings.HasPrefix(content, "@start"+inputType) &&
+		!strings.HasPrefix(content, "@startuml") {
+		content = fmt.Sprintf("@start%s\n%s", inputType, content)
+	}
+	if !strings.HasSuffix(content, "@end"+inputType) &&
+		!strings.HasSuffix(content, "@enduml") {
+		content = content + "\n@end" + inputType
+	}
+
 	output, err := plantuml(content, outputFormat)
 	if err != nil {
 		log.Fatal(err)
