@@ -41,45 +41,28 @@ func main() {
 		jarPath, _ = exec.LookPath("plantuml.jar")
 	}
 
+	dotName := `dot`
+	javaName := `java`
+	if runtime.GOOS == "windows" {
+		dotName = `dot.exe`
+		javaName = `jave.exe`
+	}
 	dotPath = os.Getenv(`GRAPHVIZ_DOT`)
 	if b, err := fsutil.FileExists(dotPath); err != nil || !b {
-		if runtime.GOOS == "windows" {
-			dotPath, _ = exec.LookPath(`dot.exe`)
-		} else {
-			dotPath, _ = exec.LookPath(`dot`)
-		}
+		dotPath, _ = exec.LookPath(dotName)
 	}
 
 	javaPath = os.Getenv(`JAVA_PATH`)
 	if b, err := fsutil.FileExists(javaPath); err != nil || !b {
-		if runtime.GOOS == "windows" {
-			javaPath, _ = exec.LookPath(`java.exe`)
-		} else {
-			javaPath, _ = exec.LookPath(`java`)
-		}
-	}
-	if b, err := fsutil.FileExists(javaPath); err != nil || !b {
 		javaHome := os.Getenv(`JAVA_HOME`)
-		if b, err := fsutil.FileExists(javaHome); err == nil && b {
-			if runtime.GOOS == "windows" {
-				javaPath = filepath.Join(javaHome, "bin", "java.exe")
-			} else {
-				javaPath = filepath.Join(javaHome, "bin", "java")
-			}
-		}
+		javaPath = filepath.Join(javaHome, "bin", javaName)
 	}
 	if b, err := fsutil.FileExists(javaPath); err != nil || !b {
 		jreHome := os.Getenv(`JRE_HOME`)
-		if b, err := fsutil.FileExists(jreHome); err == nil && b {
-			if runtime.GOOS == "windows" {
-				javaPath = filepath.Join(jreHome, "bin", "java.exe")
-			} else {
-				javaPath = filepath.Join(jreHome, "bin", "java")
-			}
-		}
+		javaPath = filepath.Join(jreHome, "bin", javaName)
 	}
 	if b, err := fsutil.FileExists(javaPath); err != nil || !b {
-		javaPath = ""
+		javaPath, _ = exec.LookPath(javaName)
 	}
 
 	flag.StringVarP(&javaPath, "java", "j", javaPath, "set local java.exe path")
