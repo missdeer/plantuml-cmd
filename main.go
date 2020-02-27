@@ -45,7 +45,7 @@ func main() {
 	javaName := `java`
 	if runtime.GOOS == "windows" {
 		dotName = `dot.exe`
-		javaName = `jave.exe`
+		javaName = `java.exe`
 	}
 	dotPath = os.Getenv(`GRAPHVIZ_DOT`)
 	if b, err := fsutil.FileExists(dotPath); err != nil || !b {
