@@ -213,14 +213,15 @@ func plantumlRemote(content, format string) (b []byte, e error) {
 			"User-Agent": []string{"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:62.0) Gecko/20100101 Firefox/62.0"},
 			"Accept":     []string{"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
 		},
-		30*time.Second, 3)	
+		30*time.Second, 3)
 }
 
 func plantumlLocal(content, format string) (b []byte, e error) {
-	args := []string{`-Djava.awt.headless=true`,"-jar", jarPath, "-t" + format, "-charset", "UTF-8"}
+	args := []string{`-Djava.awt.headless=true`, "-jar", jarPath, "-t" + format, "-charset", "UTF-8"}
 	if b, _ := fsutil.FileExists(dotPath); b {
 		args = append(args, "-graphvizdot", dotPath)
 	}
+
 	args = append(args, "-pipe")
 	cmd := exec.Command(javaPath, args...)
 	stdin, e := cmd.StdinPipe()
@@ -234,7 +235,11 @@ func plantumlLocal(content, format string) (b []byte, e error) {
 
 	b, e = cmd.Output()
 	if len(b) > 0 {
-		e = nil		
+		e = nil
+		index := bytes.Index(b, []byte(`</svg><?xml`))
+		if index > 0 {
+			b = b[:index+len(`</svg>`)]
+		}
 	}
 
 	return b, e
