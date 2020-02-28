@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	remoteService   = false
+	remoteService   bool
 	javaPath        string
 	jarPath         string
 	dotPath         string
@@ -73,7 +73,7 @@ func main() {
 	flag.StringVarP(&outputDirectory, "path", "p", ".", "save output file to local directory path")
 	flag.StringVarP(&sourceFile, "input", "i", "", "input source file path, if it's empty, then read source from stdin")
 	flag.StringVarP(&inputType, "type", "t", "uml", "set input type, uml/ditto/mindmap/math/latex/dot/gantt")
-	flag.BoolVarP(&remoteService, "remote", "r", false, "use remote PlantUML service")
+	flag.BoolVarP(&remoteService, "remote", "r", false, "use remote PlantUML service, must set service URL")
 	flag.StringVarP(&serviceURL, "service", "s", "https://www.plantuml.com/plantuml", "set remote PlantUML service url")
 	flag.Parse()
 
@@ -208,21 +208,24 @@ doRequest:
 func plantumlRemote(content, format string) (b []byte, e error) {
 	u := fmt.Sprintf("%s/%s/%s", serviceURL, format, Encode(content))
 
-	b, e = getBytes(u,
+	return getBytes(u,
 		http.Header{
 			"User-Agent": []string{"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:62.0) Gecko/20100101 Firefox/62.0"},
 			"Accept":     []string{"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
 		},
-		30*time.Second, 3)
-	return
+		30*time.Second, 3)	
 }
 
 func plantumlLocal(content, format string) (b []byte, e error) {
-	cmd := exec.Command(javaPath, "-jar", jarPath, "-t"+format, "-charset", "UTF-8", "-graphvizdot", dotPath, "-pipe")
+	args := []string{`-Djava.awt.headless=true`,"-jar", jarPath, "-t" + format, "-charset", "UTF-8"}
+	if b, _ := fsutil.FileExists(dotPath); b {
+		args = append(args, "-graphvizdot", dotPath)
+	}
+	args = append(args, "-pipe")
+	cmd := exec.Command(javaPath, args...)
 	stdin, e := cmd.StdinPipe()
 	if e != nil {
-		log.Println("can't get stdin pipe", e)
-		return
+		return nil, e
 	}
 	go func() {
 		io.WriteString(stdin, content)
@@ -230,19 +233,22 @@ func plantumlLocal(content, format string) (b []byte, e error) {
 	}()
 
 	b, e = cmd.Output()
-	if e != nil {
-		log.Println("cmd output error:", e)
-		return
+	if len(b) > 0 {
+		e = nil		
 	}
 
-	return b, nil
+	return b, e
 }
 
 func plantuml(content, format string) (b []byte, e error) {
-	if remoteService != false {
-		b, e = plantumlLocal(content, format)
-	} else {
+	if remoteService {
 		b, e = plantumlRemote(content, format)
+	} else {
+		b, e = plantumlLocal(content, format)
+	}
+
+	if e != nil {
+		return
 	}
 
 	if format == "svg" {
