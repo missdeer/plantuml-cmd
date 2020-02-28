@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -237,18 +236,13 @@ func plantumlLocal(content, format string) (b []byte, e error) {
 		args = append(args, "-graphvizdot", dotPath)
 	}
 
+	var out bytes.Buffer
 	args = append(args, "-pipe")
 	cmd := exec.Command(javaPath, args...)
-	stdin, e := cmd.StdinPipe()
-	if e != nil {
-		return nil, e
-	}
-	go func() {
-		io.WriteString(stdin, content)
-		stdin.Close()
-	}()
-
-	b, e = cmd.Output()
+	cmd.Stdin = strings.NewReader(content)
+    cmd.Stdout = &out
+    e = cmd.Run()
+	b = out.Bytes()
 	if len(b) > 0 {
 		e = nil
 		index := bytes.Index(b, []byte(`</svg><?xml`))
