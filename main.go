@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -76,6 +77,14 @@ func main() {
 	flag.BoolVarP(&remoteService, "remote", "r", false, "use remote PlantUML service, must set service URL")
 	flag.StringVarP(&serviceURL, "service", "s", "https://www.plantuml.com/plantuml", "set remote PlantUML service url")
 	flag.Parse()
+
+	if outputFormat != "svg" && outputFormat != "png" {
+		log.Fatal("invalid output format")
+	}
+
+	if remoteService && serviceURL == "" {
+		log.Fatal("invalid remote service URL")
+	}
 
 	input := []string{}
 	var fh *os.File
@@ -217,6 +226,12 @@ func plantumlRemote(content, format string) (b []byte, e error) {
 }
 
 func plantumlLocal(content, format string) (b []byte, e error) {
+	if b, e := fsutil.FileExists(javaPath); e != nil || !b {
+		return nil, errors.New("invalid java.exe path")
+	}
+	if b, e := fsutil.FileExists(jarPath); e != nil || !b {
+		return nil, errors.New("invalid plantuml.jar path")
+	}
 	args := []string{`-Djava.awt.headless=true`, "-jar", jarPath, "-t" + format, "-charset", "UTF-8"}
 	if b, _ := fsutil.FileExists(dotPath); b {
 		args = append(args, "-graphvizdot", dotPath)
