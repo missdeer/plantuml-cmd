@@ -72,7 +72,7 @@ func main() {
 	flag.StringVarP(&outputPath, "output", "o", "", "save output file to local path, will ignore path option, if it's not set, will generate a uuid as the file name")
 	flag.StringVarP(&outputDirectory, "path", "p", ".", "save output file to local directory path")
 	flag.StringVarP(&sourceFile, "input", "i", "", "input source file path, if it's empty, then read source from stdin")
-	flag.StringVarP(&inputType, "type", "t", "uml", "set input type, uml/ditto/mindmap/math/latex/dot/gantt")
+	flag.StringVarP(&inputType, "type", "t", "uml", "set input type, uml/ditaa/mindmap/math/latex/dot/gantt")
 	flag.BoolVarP(&remoteService, "remote", "r", false, "use remote PlantUML service, must set service URL")
 	flag.StringVarP(&serviceURL, "service", "s", "https://www.plantuml.com/plantuml", "set remote PlantUML service url")
 	flag.Parse()
