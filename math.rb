@@ -19,7 +19,11 @@ module Jekyll
       filepath = tmproot + folder + filename
       if !File.exist?(filepath)
         plantuml_cmd = File.expand_path(plantuml_cmd_path)
-        cmd = plantuml_cmd + " -t math -o " + filepath
+        if config['remote'].eql? "enabled"
+          cmd = plantuml_cmd + " -r -t math -o " + filepath
+        else
+          cmd = plantuml_cmd + " -t math -o " + filepath
+        end
         result, status = Open3.capture2e(cmd, :stdin_data=>code)
         Jekyll.logger.debug(filepath + " -->\t" + status.inspect() + "\t" + result)
       end

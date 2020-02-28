@@ -19,7 +19,11 @@ module Jekyll
       filepath = tmproot + folder + filename
       if !File.exist?(filepath)
         plantuml_cmd = File.expand_path(plantuml_cmd_path)
-        cmd = plantuml_cmd + " -t mindmap -o " + filepath
+        if config['remote'].eql? "enabled"
+          cmd = plantuml_cmd + " -r -t mindmap -o " + filepath
+        else
+          cmd = plantuml_cmd + " -t mindmap -o " + filepath
+        end
         result, status = Open3.capture2e(cmd, :stdin_data=>code)
         Jekyll.logger.debug(filepath + " -->\t" + status.inspect() + "\t" + result)
       end
