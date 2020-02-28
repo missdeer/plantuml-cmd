@@ -20,7 +20,7 @@ module Jekyll
       if !File.exist?(filepath)
         plantuml_cmd = File.expand_path(plantuml_cmd_path)
         if config['remote'].eql? "enabled"
-          cmd = plantuml_cmd + " -r -t mindmap -o " + filepath
+          cmd = plantuml_cmd + " -r -o " + filepath
         else
           cmd = plantuml_cmd + " -o " + filepath
         end
