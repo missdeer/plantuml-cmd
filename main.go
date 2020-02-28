@@ -240,8 +240,8 @@ func plantumlLocal(content, format string) (b []byte, e error) {
 	args = append(args, "-pipe")
 	cmd := exec.Command(javaPath, args...)
 	cmd.Stdin = strings.NewReader(content)
-    cmd.Stdout = &out
-    e = cmd.Run()
+	cmd.Stdout = &out
+	e = cmd.Run()
 	b = out.Bytes()
 	if len(b) > 0 {
 		e = nil
