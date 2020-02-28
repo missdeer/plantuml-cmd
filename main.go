@@ -126,6 +126,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if len(output) == 0 {
+		log.Fatal(errors.New("empty output"))
+	}
 	if outputPath != "" {
 		d := filepath.Dir(outputPath)
 		if b, err := fsutil.FileExists(d); b == false || err != nil {
@@ -135,8 +138,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer f.Close()
 		f.Write(output)
+		f.Close()
 		return
 	}
 	if outputDirectory != "" {
@@ -152,8 +155,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer f.Close()
 		f.Write(output)
+		f.Close()
 		return
 	}
 }
