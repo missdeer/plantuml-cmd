@@ -15,7 +15,7 @@ module Jekyll
       create_tmp_folder(tmproot, folder)
 
       code = super
-      filename = Digest::MD5.hexdigest(code) + ".svg"
+      filename = Digest::MD5.hexdigest(code) + ".png"
       filepath = tmproot + folder + filename
       if !File.exist?(filepath)
         plantuml_cmd = File.expand_path(plantuml_cmd_path)
