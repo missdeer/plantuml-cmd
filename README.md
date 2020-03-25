@@ -44,3 +44,9 @@ https://github.com/missdeer/blog/blob/gh-pages/_posts/2020-02-28-plantuml-sampel
 ## Live Sample Post
 
 https://blog.minidump.info/2020/02/plantuml-sampels/
+
+# Donate
+
+![微信扫一扫](https://raw.githubusercontent.com/missdeer/corednshome/master/src/res/wepay.jpg)  ![支付宝扫一扫](https://raw.githubusercontent.com/missdeer/corednshome/master/src/res/alipay.jpg)
+
+[![paypal donate](https://raw.githubusercontent.com/missdeer/corednshome/master/paypal-donate.png)](https://www.paypal.me/dfordsoft/)
