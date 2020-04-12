@@ -39,11 +39,11 @@ https://github.com/missdeer/blog/
 
 ## Sample Post
 
-https://github.com/missdeer/blog/blob/gh-pages/_posts/2020-02-28-plantuml-sampels.md
+https://github.com/missdeer/blog/blob/gh-pages/_posts/2020-02-28-plantuml-samples.md
 
 ## Live Sample Post
 
-https://blog.minidump.info/2020/02/plantuml-sampels/
+https://blog.minidump.info/2020/02/plantuml-samples/
 
 # Donate
 
