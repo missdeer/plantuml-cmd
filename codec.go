@@ -2,7 +2,8 @@ package main
 
 import (
 	"bytes"
-	"compress/zlib"
+	"compress/flate"
+	"errors"
 	"io/ioutil"
 	"log"
 )
@@ -64,7 +65,10 @@ func Decode(data string) string {
 
 func compressDeflate(str []byte) string {
 	var b bytes.Buffer
-	w := zlib.NewWriter(&b)
+	w, err := flate.NewWriter(&b, flate.BestSpeed)
+	if err != nil {
+		log.Fatal(err)
+	}
 	w.Write(str)
 	w.Close()
 	return b.String()
@@ -72,16 +76,14 @@ func compressDeflate(str []byte) string {
 
 func uncompressInflate(str []byte) string {
 	b := bytes.NewReader(str)
-	r, err := zlib.NewReader(b)
-	if err != nil {
-		log.Println(err)
-		return ""
+	r := flate.NewReader(b)
+	if r == nil {
+		log.Fatal(errors.New("Creating new flate reader failed"))
 	}
 	defer r.Close()
 	s, err := ioutil.ReadAll(r)
 	if err != nil {
-		log.Println(err)
-		return ""
+		log.Fatal(err)
 	}
 	return string(s)
 }
