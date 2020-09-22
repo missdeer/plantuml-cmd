@@ -39,7 +39,7 @@ https://github.com/missdeer/blog/
 
 ## Sample Post
 
-https://github.com/missdeer/blog/blob/gh-pages/_posts/2020-02-28-plantuml-samples.md
+https://github.com/missdeer/blog/blob/master/_posts/2020-02-28-plantuml-samples.md
 
 ## Live Sample Post
 
