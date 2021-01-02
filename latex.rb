@@ -15,22 +15,27 @@ module Jekyll
       create_tmp_folder(tmproot, folder)
 
       code = super
-      filename = Digest::MD5.hexdigest(code) + ".svg"
+      filename = Digest::MD5.hexdigest(code) + ".png"
       filepath = tmproot + folder + filename
       if !File.exist?(filepath)
         plantuml_cmd = File.expand_path(plantuml_cmd_path)
         if config['remote'].eql? "enabled"
-          cmd = plantuml_cmd + " -r -t latex -o " + filepath
+          cmd = plantuml_cmd + " -r -t latex -f png -o " + filepath
         else
-          cmd = plantuml_cmd + " -t latex -o " + filepath
+          cmd = plantuml_cmd + " -t latex -f png -o " + filepath
         end
         result, status = Open3.capture2e(cmd, :stdin_data=>code)
         Jekyll.logger.debug(filepath + " -->\t" + status.inspect() + "\t" + result)
       end
       
-      text = File.read(filepath)
-      startPos = text.index('<svg')
-      source = text[startPos..-1]
+      site.static_files << Jekyll::StaticFile.new(site, tmproot, folder, filename)
+      
+      baseurl = site.config['baseurl']
+      if baseurl.nil?
+        source = "<img src='" + folder + filename + "'>"
+      else
+        source = "<img src='" + baseurl + folder + filename + "'>"
+      end
     end
 
     private
