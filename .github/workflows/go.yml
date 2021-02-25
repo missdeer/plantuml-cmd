@@ -1,9 +1,38 @@
 name: Go
 on: [push]
 jobs:
+  Darwin:
+    runs-on: macos-latest
+    steps:
+    - name: Set up Go 1.16
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.16
+      id: go
 
-  build:
-    name: Build
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+      with:
+        ref: master
+
+    - name: Build
+      run: |
+        env CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w"  -o darwin-amd64/plantuml-cmd
+        env CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w"  -o darwin-arm64/plantuml-cmd
+
+    - name: Upload artifact plantuml-cmd-darwin-amd64
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: plantuml-cmd-darwin-amd64
+        path: darwin-amd64
+
+    - name: Upload artifact plantuml-cmd-darwin-arm64
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: plantuml-cmd-darwin-arm64
+        path: darwin-arm64
+
+  WindowsLinux:
     runs-on: ubuntu-latest
     steps:
 
@@ -16,26 +45,17 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
+    - name: Set up mingw toolchain for windows
+      run: |
+        sudo apt-get update -qq ;
+        sudo apt-get install -qq g++-mingw-w64-i686 ;
+        sudo apt-get install -qq g++-mingw-w64-x86-64 ;
+
     - name: Build
       run: |
-        env GOOS=linux GOARCH=amd64 go build -o linux-amd64/plantuml-cmd -ldflags="-s -w" .
-        env GOOS=linux GOARCH=386 go build -o linux-386/plantuml-cmd -ldflags="-s -w" .
-        env GOOS=linux GOARCH=arm GOARM=5 go build -o linux-arm-5/plantuml-cmd -ldflags="-s -w" .
-        env GOOS=linux GOARCH=arm GOARM=6 go build -o linux-arm-6/plantuml-cmd -ldflags="-s -w" .
-        env GOOS=linux GOARCH=arm GOARM=7 go build -o linux-arm-7/plantuml-cmd -ldflags="-s -w" .
-        env GOOS=linux GOARCH=arm64 go build -o linux-arm64/plantuml-cmd -ldflags="-s -w" .
-        env GOOS=darwin GOARCH=amd64 go build -o darwin-amd64/plantuml-cmd -ldflags="-s -w" .
-        env GOOS=darwin GOARCH=arm64 go build -o darwin-arm64/plantuml-cmd -ldflags="-s -w" .
-        env GOOS=windows GOARCH=amd64 go build -o windows-amd64/plantuml-cmd.exe -ldflags="-s -w" .
-        env GOOS=windows GOARCH=386 go build -o windows-386/plantuml-cmd.exe -ldflags="-s -w" .
-        env GOOS=freebsd GOARCH=amd64 go build -o freebsd-amd64/plantuml-cmd -ldflags="-s -w" .
-        env GOOS=freebsd GOARCH=386 go build -o freebsd-386/plantuml-cmd -ldflags="-s -w" .
-        env GOOS=openbsd GOARCH=amd64 go build -o openbsd-amd64/plantuml-cmd -ldflags="-s -w" .
-        env GOOS=openbsd GOARCH=386 go build -o openbsd-386/plantuml-cmd -ldflags="-s -w" .
-        env GOOS=netbsd GOARCH=amd64 go build -o netbsd-amd64/plantuml-cmd -ldflags="-s -w" .
-        env GOOS=netbsd GOARCH=386 go build -o netbsd-386/plantuml-cmd -ldflags="-s -w" .
-        env GOOS=dragonfly GOARCH=amd64 go build -o dragonfly-amd64/plantuml-cmd -ldflags="-s -w" .
-        env GOPATH=$PWD/gopath go get -u github.com/missdeer/cicdutil
+        env CGO_ENABLED=1 GOARCH=amd64 GOOS=linux go build -ldflags="-s -w"  -o linux-amd64/plantuml-cmd 
+        env CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ LD=x86_64-w64-mingw32-ld GOARCH=amd64 GOOS=windows go build  -o windows-amd64/plantuml-cmd.exe 
+        env CGO_ENABLED=1 CC=i686-w64-mingw32-gcc CXX=i686-w64-mingw32-g++ LD=i686-w64-mingw32-ld GOARCH=386 GOOS=windows go build  -o windows-386/plantuml-cmd.exe
       
     - name: Upload artifact plantuml-cmd-linux-amd64
       uses: actions/upload-artifact@v1.0.0
@@ -44,118 +64,6 @@ jobs:
         name: plantuml-cmd-linux-amd64
         # Directory containing files to upload
         path: linux-amd64
-
-    - name: Upload artifact plantuml-cmd-linux-386
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        # Artifact name
-        name: plantuml-cmd-linux-386
-        # Directory containing files to upload
-        path: linux-386
-
-    - name: Upload artifact plantuml-cmd-linux-arm-5
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        # Artifact name
-        name: plantuml-cmd-linux-arm-5
-        # Directory containing files to upload
-        path: linux-arm-5
-
-    - name: Upload artifact plantuml-cmd-linux-arm-6
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        # Artifact name
-        name: plantuml-cmd-linux-arm-6
-        # Directory containing files to upload
-        path: linux-arm-6
-
-    - name: Upload artifact plantuml-cmd-linux-arm-7
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        # Artifact name
-        name: plantuml-cmd-linux-arm-7
-        # Directory containing files to upload
-        path: linux-arm-7
-
-    - name: Upload artifact plantuml-cmd-linux-arm64
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        # Artifact name
-        name: plantuml-cmd-linux-arm64
-        # Directory containing files to upload
-        path: linux-arm64
-
-    - name: Upload artifact plantuml-cmd-darwin-amd64
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        # Artifact name
-        name: plantuml-cmd-darwin-amd64
-        # Directory containing files to upload
-        path: darwin-amd64
-
-    - name: Upload artifact plantuml-cmd-darwin-arm64
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        # Artifact name
-        name: plantuml-cmd-darwin-arm64
-        # Directory containing files to upload
-        path: darwin-arm64
-
-    - name: Upload artifact plantuml-cmd-dragonfly-amd64
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        # Artifact name
-        name: plantuml-cmd-dragonfly-amd64
-        # Directory containing files to upload
-        path: dragonfly-amd64
-
-    - name: Upload artifact plantuml-cmd-openbsd-amd64
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        # Artifact name
-        name: plantuml-cmd-openbsd-amd64
-        # Directory containing files to upload
-        path: openbsd-amd64
-
-    - name: Upload artifact plantuml-cmd-openbsd-386
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        # Artifact name
-        name: plantuml-cmd-openbsd-386
-        # Directory containing files to upload
-        path: openbsd-386
-
-    - name: Upload artifact plantuml-cmd-netbsd-amd64
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        # Artifact name
-        name: plantuml-cmd-netbsd-amd64
-        # Directory containing files to upload
-        path: netbsd-amd64
-
-    - name: Upload artifact plantuml-cmd-netbsd-386
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        # Artifact name
-        name: plantuml-cmd-netbsd-386
-        # Directory containing files to upload
-        path: netbsd-386
-
-    - name: Upload artifact plantuml-cmd-freebsd-amd64
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        # Artifact name
-        name: plantuml-cmd-freebsd-amd64
-        # Directory containing files to upload
-        path: freebsd-amd64
-
-    - name: Upload artifact plantuml-cmd-freebsd-386
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        # Artifact name
-        name: plantuml-cmd-freebsd-386
-        # Directory containing files to upload
-        path: freebsd-386
 
     - name: Upload artifact plantuml-cmd-windows-amd64
       uses: actions/upload-artifact@v1.0.0

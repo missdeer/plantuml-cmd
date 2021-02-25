@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/missdeer/yairc/util"
 	flag "github.com/spf13/pflag"
 
 	"github.com/google/uuid"
@@ -23,6 +24,7 @@ import (
 )
 
 var (
+	compressPNG     bool
 	remoteService   bool
 	javaPath        string
 	jarPath         string
@@ -74,6 +76,7 @@ func main() {
 	flag.StringVarP(&sourceFile, "input", "i", "", "input source file path, if it's empty, then read source from stdin")
 	flag.StringVarP(&inputType, "type", "t", "uml", "set input type, uml/ditaa/mindmap/math/latex/dot/gantt")
 	flag.BoolVarP(&remoteService, "remote", "r", false, "use remote PlantUML service, must set service URL")
+	flag.BoolVarP(&compressPNG, "compress", "z", true, "compress output PNG image")
 	flag.StringVarP(&serviceURL, "service", "s", "https://www.plantuml.com/plantuml", "set remote PlantUML service url")
 	flag.Parse()
 
@@ -140,6 +143,9 @@ func main() {
 		}
 		f.Write(output)
 		f.Close()
+		if strings.ToLower(outputFormat) == "png" {
+			util.DoCrush(compressPNG, outputPath)
+		}
 		return
 	}
 	if outputDirectory != "" {
@@ -157,6 +163,9 @@ func main() {
 		}
 		f.Write(output)
 		f.Close()
+		if strings.ToLower(outputFormat) == "png" {
+			util.DoCrush(compressPNG, fn)
+		}
 		return
 	}
 }
