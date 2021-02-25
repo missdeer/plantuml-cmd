@@ -18,19 +18,12 @@ jobs:
     - name: Build
       run: |
         env CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w"  -o darwin-amd64/plantuml-cmd
-        env CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w"  -o darwin-arm64/plantuml-cmd
 
     - name: Upload artifact plantuml-cmd-darwin-amd64
       uses: actions/upload-artifact@v1.0.0
       with:
         name: plantuml-cmd-darwin-amd64
         path: darwin-amd64
-
-    - name: Upload artifact plantuml-cmd-darwin-arm64
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        name: plantuml-cmd-darwin-arm64
-        path: darwin-arm64
 
   WindowsLinux:
     runs-on: ubuntu-latest
@@ -80,7 +73,3 @@ jobs:
         name: plantuml-cmd-windows-386
         # Directory containing files to upload
         path: windows-386
-
-    - name: Remove old artifacts
-      run: |
-        gopath/bin/cicdutil -p github -u missdeer -t ${{ secrets.GH_TOKEN }} -r plantuml-cmd -k 0 -a delete
