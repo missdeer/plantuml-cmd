@@ -32,6 +32,7 @@ module Jekyll
       startPos = text.index('<svg')
       source = text[startPos..-1]
       source = source.gsub('font-family="sans-serif"', 'font-family=""')
+      source
     end
 
     private
