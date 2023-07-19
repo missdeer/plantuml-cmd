@@ -36,6 +36,7 @@ module Jekyll
       else
         source = "<img src='" + baseurl + folder + filename + "'>"
       end
+      source
     end
 
     private
