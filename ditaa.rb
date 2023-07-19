@@ -30,12 +30,13 @@ module Jekyll
 
       site.static_files << Jekyll::StaticFile.new(site, tmproot, folder, filename)
       
-	  baseurl = site.config['baseurl']
-	  if baseurl.nil?
-		source = "<img src='" + folder + filename + "'>"
-	  else
-		source = "<img src='" + baseurl + folder + filename + "'>"
-	  end
+      baseurl = site.config['baseurl']
+      if baseurl.nil?
+            source = "<img src='" + folder + filename + "'>"
+      else
+            source = "<img src='" + baseurl + folder + filename + "'>"
+      end
+      source
     end
 
     private
